@@ -404,18 +404,20 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
     }).filter(Boolean);
 
     // Filter posts based on approval status
-    let filteredPostsWithApproval = postsWithApproval;
-    if (showOnlyApproved) {
-      filteredPostsWithApproval = postsWithApproval.filter(post => 'approval' in post);
-    } else if (pendingOnly) {
-      filteredPostsWithApproval = postsWithApproval.filter(post => {
-        // If it has an approval property, it's either manually approved or auto-approved
-        if ('approval' in post) {
-          return false;
-        }
-        return true;
-      });
-    }
+    const filteredPostsWithApproval = (() => {
+      if (showOnlyApproved) {
+        return postsWithApproval.filter(post => 'approval' in post);
+      } else if (pendingOnly) {
+        return postsWithApproval.filter(post => {
+          // If it has an approval property, it's either manually approved or auto-approved
+          if ('approval' in post) {
+            return false;
+          }
+          return true;
+        });
+      }
+      return postsWithApproval; 
+    })();
 
     // Sort all posts by creation time (pinned posts will naturally be at the top due to their IDs)
     return filteredPostsWithApproval.sort((a, b) => 
