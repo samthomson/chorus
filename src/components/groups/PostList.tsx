@@ -342,24 +342,7 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
       if (isNestedReply) return post;
     }
 
-    // For legacy kind 11 posts, they are always considered top-level
-    // Auto-approve for approved members, moderators, and the community owner
-    const isApprovedMember = approvedMembers.includes(post.pubkey);
-    const isModerator = moderators.includes(post.pubkey);
-    const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
-    const isApproved = isApprovedMember || isModerator || isOwner
-
-    return {
-      ...post,
-      ...(isApproved ? { approval: {
-          id: `auto-approved-${post.id}`,
-          pubkey: post.pubkey,
-          created_at: post.created_at,
-          autoApproved: true,
-          kind: post.kind
-        }
-      } : {})
-    };
+    return post;
   }).filter(Boolean);
 
   // Count approved and pending posts
@@ -384,63 +367,60 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
 
   // Memoize the sorted posts to avoid unnecessary re-renders
   const sortedPosts = useMemo(() => {
-    // Process pinned posts through the same approval logic
     const pinnedPostsProcessed = (pinnedPosts || [])
       .filter(post => 
         !removedPostIds.includes(post.id) && 
         !bannedUsers.includes(post.pubkey)
       )
-      .map(post => {
-        // Check if this pinned post is already in the approved posts
-        const existingApproval = (approvedPosts || []).find(ap => ap.id === post.id);
-        if (existingApproval) {
-          return existingApproval;
-        }
+    // Combine all posts and apply approval logic once
+    const allPosts = [
+      ...filteredPosts,
+      ...pinnedPostsProcessed
+    ];
 
-        // Auto-approve for approved members, moderators, and the community owner
-        const isApprovedMember = approvedMembers.includes(post.pubkey);
-        const isModerator = moderators.includes(post.pubkey);
-        const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
-        const isApproved = isApprovedMember || isModerator || isOwner
-        
-        return {
-          ...post,
-          ...(isApproved ? { approval: {
-              id: `auto-approved-${post.id}`,
-              pubkey: post.pubkey,
-              created_at: post.created_at,
-              autoApproved: true,
-              kind: post.kind
-            }
-          } : {})
-        };
-      });
+    // Apply approval logic to all posts
+    const postsWithApproval = allPosts.map(post => {
+      if (!post) return post;
+      
+      // If post already has approval info, return it as is
+      if ('approval' in post) return post;
 
-    // Filter pinned posts based on approval status
-    let filteredPinnedPosts = pinnedPostsProcessed;
+      // Auto-approve for approved members, moderators, and the community owner
+      const isApprovedMember = approvedMembers.includes(post.pubkey);
+      const isModerator = moderators.includes(post.pubkey);
+      const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
+      const isApproved = isApprovedMember || isModerator || isOwner;
+      
+      return {
+        ...post,
+        ...(isApproved ? { approval: {
+          id: `auto-approved-${post.id}`,
+          pubkey: post.pubkey,
+          created_at: post.created_at,
+          autoApproved: true,
+          kind: post.kind
+        }} : {})
+      };
+    });
+
+    // Filter posts based on approval status
+    let filteredPostsWithApproval = postsWithApproval;
     if (showOnlyApproved) {
-      filteredPinnedPosts = pinnedPostsProcessed.filter(post => 'approval' in post);
+      filteredPostsWithApproval = postsWithApproval.filter(post => 'approval' in post);
     } else if (pendingOnly) {
-      filteredPinnedPosts = pinnedPostsProcessed.filter(post => !('approval' in post));
+      filteredPostsWithApproval = postsWithApproval.filter(post => {
+        // If it has an approval property, it's either manually approved or auto-approved
+        if ('approval' in post) {
+          return false;
+        }
+        return true;
+      });
     }
 
-    // Separate regular posts (excluding pinned ones)
-    const regularPosts = filteredPosts.filter(post => 
-      post && !pinnedPostIds.includes(post.id)
-    );
-
-    // Sort regular posts by creation time
-    const sortedRegularPosts = regularPosts.sort((a, b) => 
+    // Sort all posts by creation time (pinned posts will naturally be at the top due to their IDs)
+    return filteredPostsWithApproval.sort((a, b) => 
       (b?.created_at || 0) - (a?.created_at || 0)
     );
-    
-    // Sort pinned posts by creation time (most recent pins first)
-    const sortedPinnedPosts = filteredPinnedPosts.sort((a, b) => 
-      (b?.created_at || 0) - (a?.created_at || 0)
-    );
-
-    // Combine pinned posts first, then regular posts
-    return [...sortedPinnedPosts, ...sortedRegularPosts];
   }, [
     pinnedPosts, 
     removedPostIds, 
