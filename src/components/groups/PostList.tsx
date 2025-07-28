@@ -401,7 +401,7 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
           kind: post.kind
         }} : {})
       };
-    });
+    }).filter(Boolean);
 
     // Filter posts based on approval status
     let filteredPostsWithApproval = postsWithApproval;
