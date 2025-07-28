@@ -383,7 +383,7 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
       if (!post) return post;
       
       // If post already has approval info, return it as is
-      if ('approval' in post) return post;
+      if (!!post?.approval) return post;
 
       // Auto-approve for approved members, moderators, and the community owner
       const isApprovedMember = approvedMembers.includes(post.pubkey);
@@ -406,15 +406,9 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
     // Filter posts based on approval status
     const filteredPostsWithApproval = (() => {
       if (showOnlyApproved) {
-        return postsWithApproval.filter(post => 'approval' in post);
+        return postsWithApproval.filter(post => !!post?.approval);
       } else if (pendingOnly) {
-        return postsWithApproval.filter(post => {
-          // If it has an approval property, it's either manually approved or auto-approved
-          if ('approval' in post) {
-            return false;
-          }
-          return true;
-        });
+        return postsWithApproval.filter(post => !post?.approval);
       }
       return postsWithApproval; 
     })();
