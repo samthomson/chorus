@@ -343,10 +343,11 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
     }
 
     // For legacy kind 11 posts, they are always considered top-level
-    // Auto-approve for approved members and moderators
+    // Auto-approve for approved members, moderators, and the community owner
     const isApprovedMember = approvedMembers.includes(post.pubkey);
     const isModerator = moderators.includes(post.pubkey);
-    if (isApprovedMember || isModerator) {
+    const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
+    if (isApprovedMember || isModerator || isOwner) {
       return {
         ...post,
         approval: {
@@ -396,10 +397,11 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
           return existingApproval;
         }
 
-        // Auto-approve for approved members and moderators
-        const isApprovedMember = approvedMembers.includes(post.pubkey);
-        const isModerator = moderators.includes(post.pubkey);
-        if (isApprovedMember || isModerator) {
+        // Auto-approve for approved members, moderators, and the community owner
+         const isApprovedMember = approvedMembers.includes(post.pubkey);
+         const isModerator = moderators.includes(post.pubkey);
+         const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
+         if (isApprovedMember || isModerator || isOwner) {
           return {
             ...post,
             approval: {
