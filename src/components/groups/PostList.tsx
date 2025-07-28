@@ -347,19 +347,19 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
     const isApprovedMember = approvedMembers.includes(post.pubkey);
     const isModerator = moderators.includes(post.pubkey);
     const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
-    if (isApprovedMember || isModerator || isOwner) {
-      return {
-        ...post,
-        approval: {
+    const isApproved = isApprovedMember || isModerator || isOwner
+
+    return {
+      ...post,
+      ...(isApproved ? { approval: {
           id: `auto-approved-${post.id}`,
           pubkey: post.pubkey,
           created_at: post.created_at,
           autoApproved: true,
           kind: post.kind
         }
-      };
-    }
-    return post;
+      } : {})
+    };
   }).filter(Boolean);
 
   // Count approved and pending posts
@@ -398,22 +398,22 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
         }
 
         // Auto-approve for approved members, moderators, and the community owner
-         const isApprovedMember = approvedMembers.includes(post.pubkey);
-         const isModerator = moderators.includes(post.pubkey);
-         const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
-         if (isApprovedMember || isModerator || isOwner) {
-          return {
-            ...post,
-            approval: {
+        const isApprovedMember = approvedMembers.includes(post.pubkey);
+        const isModerator = moderators.includes(post.pubkey);
+        const isOwner = communityEvent && post.pubkey === communityEvent.pubkey;
+        const isApproved = isApprovedMember || isModerator || isOwner
+        
+        return {
+          ...post,
+          ...(isApproved ? { approval: {
               id: `auto-approved-${post.id}`,
               pubkey: post.pubkey,
               created_at: post.created_at,
               autoApproved: true,
               kind: post.kind
             }
-          };
-        }
-        return post;
+          } : {})
+        };
       });
 
     // Filter pinned posts based on approval status
