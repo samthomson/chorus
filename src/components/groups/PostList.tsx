@@ -413,7 +413,7 @@ export function PostList({ communityId, showOnlyApproved = true, pendingOnly = f
       return postsWithApproval; 
     })();
 
-    // Sort all posts by creation time (pinned posts will naturally be at the top due to their IDs)
+    // Sort all posts by creation time
     return filteredPostsWithApproval.sort((a, b) => 
       (b?.created_at || 0) - (a?.created_at || 0)
     );
